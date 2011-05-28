@@ -1,5 +1,11 @@
 // Based on WebService Komerci English manual v2.5, 09/20/10
 
+var http = require('http'),
+    url = require('url'),
+    qs = require('querystring');
+
+var SERVICE_URL = 'https://ecommerce.redecard.com.br/pos_virtual/wskomerci/cap.asmx';
+
 var TRANSACTION_TYPES = {
   FULL_PAYMENT: '04',
   ISSUER_INSTALLMENTS: '06',
@@ -12,7 +18,7 @@ var TRANSACTION_TYPES = {
 var validators = {
   
   amount: function(total) {
-    return total.match('/^[0-9]+\.[0-9]{2}$');
+    return total.match(/^[0-9]+\.[0-9]{2}$/);
   },
   
   required: function(s) {
@@ -32,7 +38,7 @@ var validators = {
     return yy.match(/^[0-9]{2}$/);
   },
   
-  confirmationFlag(s) {
+  confirmationFlag: function(s) {
     return s === '' || s === 'S';
   },
   
@@ -50,6 +56,28 @@ var validators = {
   })()
 };
 
+function post(serviceUrl, params, callback) {
+  var options = url.parse(serviceUrl)
+  var data = qs.stringify(params)
+
+  var req = http.request(options, function(res) {
+    console.log('STATUS: ' + res.statusCode);
+    console.log('HEADERS: ' + JSON.stringify(res.headers));
+    res.setEncoding('utf8');
+    res.on('data', function (chunk) {
+      console.log('BODY: ' + chunk);
+    });
+    res.on('end', callback);
+  });
+
+  req.on('error', function(e) {
+    console.log('problem with request: ' + e.message);
+  });
+
+  // write data to request body
+  req.write(data + "\n");
+  req.end();
+}
 
 module.exports = {
   
@@ -89,20 +117,20 @@ module.exports = {
     for(var param in params) {
       if(!params.hasOwnProperty(param)) continue;
       var def = paramDefs[param];
-      if(!def) throw('TODO');
+      if(!def) throw('Unknown parameter: ' + param);
       var value = params[param];
-      if(value.constructor != String) throw('TODO');
-      if(value.length > def.size) throw('TODO');
+      if(value.constructor != String) throw('Non-string parameter: ' + param);
+      if(value.length > def.size) throw('Parameter value too long: ' + param);
       if(typeof def.validators != 'undefined') {
         for(var i = 0, l = def.validators.length; i < l; i++) {
-          if(!def.validators[i](value)) throw('TODO');
+          if(!def.validators[i](value)) throw('Validator failed on parameter: ' + param);
         }
       }
     }
     
     /* PARCELAS must be filled out with the value “00” (zero zero) when the “TRANSACAO” parameter is “04” or 
        “39”, that is, full payment/cash. */
-    if([TRANSACTION_TYPES.FULL_PAYMENT, IATA_FULL_PAYMENT].indexOf(params.TRANSACAO) != -1) {
+    if([TRANSACTION_TYPES.FULL_PAYMENT, TRANSACTION_TYPES.IATA_FULL_PAYMENT].indexOf(params.TRANSACAO) != -1) {
       if(params.PARCELAS !== '00') throw('TODO');
     }
     
@@ -110,6 +138,9 @@ module.exports = {
     for(var param in paramDefs) {
       paramsToSend[param] = params.hasOwnProperty(param) ? params[param] : '';
     }
+    
+    paramsToSend.op = 'GetAuthorized';
+    post(SERVICE_URL, paramsToSend, callback);
         
   }
 }

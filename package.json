@@ -1,0 +1,22 @@
+{
+  "name": "redecard",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/viktors/node-redecard.git"
+  },
+  "author": "Viktors Rotanovs <viktors.rotanovs@gmail.com> (http://rotanovs.com)",
+  "dependencies": {
+    "expresso": ">=0.7.7"
+  },
+  "main": "index",
+  "engines": {
+    "node": ">= 0.4.8 < 0.5.0"
+  },
+  "directories": {
+    "lib": "./lib"
+  },
+  "files": [
+    ""
+  ]
+}
