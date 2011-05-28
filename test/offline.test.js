@@ -22,11 +22,23 @@ module.exports = {
         ANO: '16',
         PORTADOR: 'JOHN DOE'
       }, function(err, data) {
-        console.log('getAuthorized callback')
+        console.log('getAuthorized callback', err, data);
+        
+        /*
+        { CODRET: '26',
+          MSGRET: 'Transa%E7%E3o+n%E3o+autorizada',
+          NUMPEDIDO: 'ITEM-001',
+          DATA: {},
+          NUMAUTOR: {},
+          NUMCV: {},
+          NUMAUTENT: {},
+          NUMSQN: {},
+          ORIGEM_BIN: {} } */
+        
       });
     } catch(e) {
       console.log(e);
     }
-    assert.equal(6, 'foobar'.length);
+    //assert.equal(6, 'foobar'.length);
   }
 };

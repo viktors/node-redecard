@@ -1,8 +1,9 @@
 // Based on WebService Komerci English manual v2.5, 09/20/10
 
-var http = require('http'),
+var https = require('https'),
     url = require('url'),
-    qs = require('querystring');
+    qs = require('querystring'),
+    xml2js = require('xml2js');
 
 var SERVICE_URL = 'https://ecommerce.redecard.com.br/pos_virtual/wskomerci/cap.asmx';
 
@@ -56,26 +57,41 @@ var validators = {
   })()
 };
 
-function post(serviceUrl, params, callback) {
-  var options = url.parse(serviceUrl)
+function serviceRequest(serviceUrl, method, params, callback) {
+  var parsedUrl = url.parse(serviceUrl + '/' + method)
+  var options = {
+    host: parsedUrl.host,
+    port: 443,
+    path: parsedUrl.pathname,
+    method: 'POST',
+    headers: { 
+        'Content-Type': 'application/x-www-form-urlencoded', 
+        'Host': parsedUrl.host,
+        'User-Agent': 'www.novembra.com.br'
+    }
+  };
   var data = qs.stringify(params)
 
-  var req = http.request(options, function(res) {
-    console.log('STATUS: ' + res.statusCode);
-    console.log('HEADERS: ' + JSON.stringify(res.headers));
-    res.setEncoding('utf8');
-    res.on('data', function (chunk) {
-      console.log('BODY: ' + chunk);
+  var req = https.request(options, function(res) {
+    console.log("statusCode: ", res.statusCode);
+    console.log("headers: ", res.headers);
+
+    var buf = []
+    res.on('data', function(data) {
+      buf.push(data)
     });
-    res.on('end', callback);
+    res.on('end', function() {
+      var parser = new xml2js.Parser();
+      parser.addListener('end', function(result) {
+          callback(0, result);
+      });
+      parser.parseString(buf.join(''));
+    });
   });
-
   req.on('error', function(e) {
-    console.log('problem with request: ' + e.message);
+    console.error(e);
   });
-
-  // write data to request body
-  req.write(data + "\n");
+  req.write(data);
   req.end();
 }
 
@@ -139,8 +155,7 @@ module.exports = {
       paramsToSend[param] = params.hasOwnProperty(param) ? params[param] : '';
     }
     
-    paramsToSend.op = 'GetAuthorized';
-    post(SERVICE_URL, paramsToSend, callback);
+    serviceRequest(SERVICE_URL, 'GetAuthorized', paramsToSend, callback);
         
   }
 }

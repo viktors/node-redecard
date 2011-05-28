@@ -7,7 +7,8 @@
   },
   "author": "Viktors Rotanovs <viktors.rotanovs@gmail.com> (http://rotanovs.com)",
   "dependencies": {
-    "expresso": ">=0.7.7"
+    "expresso": ">=0.7.7",
+    "xml2js": ">=0.1.6"
   },
   "main": "index",
   "engines": {
