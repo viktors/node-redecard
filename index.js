@@ -22,7 +22,7 @@ function serviceRequest(serviceUrl, method, params, callback) {
                 , method: 'POST'
                 , headers: { 'Content-Type': 'application/x-www-form-urlencoded'
                            , 'Host': parsedUrl.host
-                           , 'User-Agent': 'www.novembra.com.br'
+                           , 'User-Agent': 'https://github.com/viktors/node-redecard'
                            }
                 }
     , data = qs.stringify(params)
