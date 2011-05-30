@@ -5,16 +5,15 @@ var https = require('https')
   , qs = require('querystring')
   , xml2js = require('xml2js')
 
-var SERVICE_URL = 'https://ecommerce.redecard.com.br/pos_virtual/wskomerci/cap.asmx';
-
-var TRANSACTION_TYPES = { FULL_PAYMENT: '04'
+var SERVICE_URL = 'https://ecommerce.redecard.com.br/pos_virtual/wskomerci/cap.asmx'
+  , TRANSACTION_TYPES = { FULL_PAYMENT: '04'
                         , ISSUER_INSTALLMENTS: '06'
                         , MERCHANT_INSTALLMENTS: '08'
                         , PRE_AUTHORIZATION: '73'
                         , IATA_FULL_PAYMENT: '39'
                         , IATA_INSTALLMENTS: '40'
                         }
-var VALID_TRANSACTION_CODES = Object.keys(TRANSACTION_TYPES).map(function(k) { return TRANSACTION_TYPES[k] })
+  , VALID_TRANSACTION_CODES = Object.keys(TRANSACTION_TYPES).map(function(k) { return TRANSACTION_TYPES[k] })
 
 var validators = 
   { amount: function(total) { return total.match(/^[0-9]+\.[0-9]{2}$/) }  
