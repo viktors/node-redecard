@@ -11,16 +11,16 @@ module.exports =
   { 'test getAuthorized': function() {
       try {
         redecard.getAuthorized(
-          { TOTAL: '1.00'
-          , TRANSACAO: redecard.TRANSACTION_TYPES.FULL_PAYMENT
-          , PARCELAS: '00'
-          , FILIACAO: '36483184'
-          , NUMPEDIDO: 'ITEM-001'
-          , NRCARTAO: '4111111111111111'
-          , CVC2: '123'
-          , MES: '01'
-          , ANO: '16'
-          , PORTADOR: 'JOHN DOE'
+          { amount: 1.00
+          , type: redecard.TYPES.FULL_PAYMENT
+          , installments: 0
+          , supplierId: '36483184'
+          , orderId: 'ITEM-001'
+          , cardNumber: '4111111111111111'
+          , cardCode: '123'
+          , cardExpMonth: 1
+          , cardExpYear: 2016
+          , cardFullName: 'JOHN DOE'
           }, 
           function(err, data) {
             console.log('getAuthorized callback', err, data)
