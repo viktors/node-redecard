@@ -120,8 +120,7 @@ function getAuthorized(params, cb) {
     , pax3:           { field: 'PAX3',         size: 26, required: false, description: 'Airline: The name of the third passenger'}
     , pax4:           { field: 'PAX4',         size: 26, required: false, description: 'Airline: The name of the fourth passenger'}
     , autoConfirm:    { field: 'CONFTXN',      size:  1, required: false, description: 'Confirmation Flag', formatter: function(b) { return b ? 'S' : '' }}
-    , additionalData: { field: 'ADD_Data',     size:  0, required: false, description: 'Only for Airline Companies, Hotels and Car Rental merchants'}
-    , additionalDataTst: { field: 'ADDData',     size:  0, required: false, description: 'Only for Airline Companies, Hotels and Car Rental merchants'}
+    , additionalData: { field: 'ADDData',      size:  0, required: false, description: 'Only for Airline Companies, Hotels and Car Rental merchants'}
     }
 
   // map parameter names, format and check parameter values
