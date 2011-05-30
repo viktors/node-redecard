@@ -5,7 +5,9 @@ var https = require('https')
   , qs = require('querystring')
   , xml2js = require('xml2js')
 
-var SERVICE_URL = 'https://ecommerce.redecard.com.br/pos_virtual/wskomerci/cap.asmx'
+var configs = { production: { SERVICE_URL: 'https://ecommerce.redecard.com.br/pos_virtual/wskomerci/cap.asmx' }
+              , test: { SERVICE_URL: 'https://ecommerce.redecard.com.br/pos_virtual/wskomerci/cap_teste.asmx' }
+              }
   , TYPES = { FULL_PAYMENT: 4
             , ISSUER_INSTALLMENTS: 6
             , MERCHANT_INSTALLMENTS: 8
@@ -13,8 +15,38 @@ var SERVICE_URL = 'https://ecommerce.redecard.com.br/pos_virtual/wskomerci/cap.a
             , IATA_FULL_PAYMENT: 39
             , IATA_INSTALLMENTS: 40
             }
+  , ERRORS = { 20: 'Missing mandatory parameter'
+             , 21: 'Membership number in invalid format'
+             , 22: 'Number of installments inconsistent with the transaction'
+             , 23: 'Problems in merchant’s registration: invalid IP'
+             , 24: 'Problems in merchant’s registration'
+             , 25: 'Merchant not registered'
+             , 26: 'Merchant not registered'
+             , 27: 'Invalid card'
+             , 28: 'CVC2 in invalid format'
+             , 29: 'Operation not allowed: The order number exceeds 13 characters for the IATA type transaction (39 or 40)'
+             , 30: 'Missing AVS parameter'
+             , 31: 'Order number is greater than the allowed (16 positions)'
+             , 32: 'IATA code is invalid or inexistent'
+             , 33: 'Invalid IATA code'
+             , 34: 'Distributor is invalid or inexistent'
+             , 35: 'Problems in merchant’s registration: invalid IP'
+             , 36: 'Operation not allowed'
+             , 37: 'Distributor is invalid or inexistent'
+             , 38: 'Operation not allowed in test environment. Transactions with amounts that exceed R$ 4.00 may not be performed in the test environment.'
+             , 39: 'Operation not allowed for the informed IATA code'
+             , 40: 'IATA code is invalid or inexistent'
+             , 41: 'Problems in the merchant’s registration, or username/password problem'
+             , 42: 'Problems in the merchant’s user registration, or username/password problem'
+             , 43: 'Problems in user authentication, or username/password problem'
+             , 44: 'Incorrect user for tests'
+             , 45: 'Problems in merchant’s registration for tests'
+             , 56: 'Invalid Data'
+             }
 
-function serviceRequest(serviceUrl, method, params, cb) {
+function serviceRequest(env, method, params, cb) {
+  var serviceUrl = configs[env].SERVICE_URL
+  if(env == 'test') method += 'Tst'
   var parsedUrl = url.parse(serviceUrl + '/' + method)
     , options = { host: parsedUrl.host
                 , port: 443
@@ -22,20 +54,21 @@ function serviceRequest(serviceUrl, method, params, cb) {
                 , method: 'POST'
                 , headers: { 'Content-Type': 'application/x-www-form-urlencoded'
                            , 'Host': parsedUrl.host
-                           , 'User-Agent': 'https://github.com/viktors/node-redecard'
+                           , 'User-Agent': 'node-redecard'
                            }
                 }
     , data = qs.stringify(params)
 
   var req = https.request(options, function(res) {
-    if(res.statusCode != 200) { 
-      return cb(new Error( 'Status code: ' + res.statusCode 
-                         + ' Headers: ' + JSON.stringify(res.headers)
-                         ))
-    }
     var buf = []
     res.on('data', function(data) { buf.push(data) })
     res.on('end', function() {
+      if(res.statusCode != 200) { 
+        return cb(new Error( 'Status code: ' + res.statusCode 
+                           + ' Headers: ' + JSON.stringify(res.headers)
+                           + ' Body: ' + buf.join('')
+                           ))
+      }
       var parser = new xml2js.Parser()
       parser.addListener('end', function(result) { cb(0, result) })
       parser.parseString(buf.join(''))
@@ -59,6 +92,9 @@ function parseDate(yyyymmdd) {
 }
 
 function getAuthorized(params, cb) {
+  var env = params.env
+  delete params.env
+
   var paramDefs = 
     { amount:         { field: 'TOTAL',        size: 10, required: true,  description: 'Sales total amount', formatter: function(n) { return n.toFixed(2) }}
     , type:           { field: 'TRANSACAO',    size:  2, required: true,  description: 'Transaction type code', formatter: function(n) { return zeroPad(n, 2) }}
@@ -73,7 +109,7 @@ function getAuthorized(params, cb) {
     , iata:           { field: 'IATA',         size:  9, required: false, description: 'Airline: IATA code' }
     , distributorId:  { field: 'DISTRIBUIDOR', size:  9, required: false, description: 'Membership number of distributing store / card issuer, when B2B'}
     , concentradorId: { field: 'CONCENTRADOR', size:  5, required: false, description: 'N/A – Send parameter blank'} // no idea what it is
-    , boardingTax:    { field: 'TAXAEMBARQUE', size: 10, required: false, description: 'Airline: Boarding tax'}
+    , boardingTax:    { field: 'TAXAEMBARQUE', size: 10, required: false, description: 'Airline: Boarding tax', formatter: function(n) { return n.toFixed(2) }}
     , boardingDate:   { field: 'ENTRADA',      size: 10, required: false, description: 'Airline: Boarding date'}
     , docNum1:        { field: 'NUMDOC1',      size: 16, required: false, description: 'Airline: ticket number of the main passenger'}
     , docNum2:        { field: 'NUMDOC2',      size: 16, required: false, description: 'Airline: ticket number of the second passenger'}
@@ -85,6 +121,7 @@ function getAuthorized(params, cb) {
     , pax4:           { field: 'PAX4',         size: 26, required: false, description: 'Airline: The name of the fourth passenger'}
     , autoConfirm:    { field: 'CONFTXN',      size:  1, required: false, description: 'Confirmation Flag', formatter: function(b) { return b ? 'S' : '' }}
     , additionalData: { field: 'ADD_Data',     size:  0, required: false, description: 'Only for Airline Companies, Hotels and Car Rental merchants'}
+    , additionalDataTst: { field: 'ADDData',     size:  0, required: false, description: 'Only for Airline Companies, Hotels and Car Rental merchants'}
     }
 
   // map parameter names, format and check parameter values
@@ -109,8 +146,9 @@ function getAuthorized(params, cb) {
       return cb(new Error('Required parameter not present: ' + param))
     }
   }
+  console.log(paramsToSend)
   
-  serviceRequest(SERVICE_URL, 'GetAuthorized', paramsToSend, function(err, data) {
+  serviceRequest(env, 'GetAuthorized', paramsToSend, function(err, data) {
     if(err) return cb(err)
     var fieldMap = { CODRET: {field: 'errorCode', convert: function(s) { return parseInt(s, 10) }}
                    , MSGRET: {field: 'errorMessage', convert: function(s) { return unescape(String(s).replace(/\+/g, '%20')) }}
@@ -135,6 +173,7 @@ function getAuthorized(params, cb) {
     }
     
     rv.isApproved = rv.errorCode === 0 && rv.hasOwnProperty('receiptId')
+    if(rv.errorCode && ERRORS[rv.errorCode]) rv.errorDetails = ERRORS[rv.errorCode]
     
     return cb(null, rv)
   })

@@ -10,7 +10,8 @@ var redecard = require('../index.js')
 module.exports = 
   { 'test getAuthorized': function() {
       redecard.getAuthorized(
-        { amount: 0.01
+        { env: 'test'
+        , amount: 0.01
         , type: redecard.TYPES.FULL_PAYMENT
         , installments: 0
         , supplierId: '36483184'
