@@ -14,7 +14,7 @@ var SERVICE_URL = 'https://ecommerce.redecard.com.br/pos_virtual/wskomerci/cap.a
             , IATA_INSTALLMENTS: 40
             }
 
-function serviceRequest(serviceUrl, method, params, callback) {
+function serviceRequest(serviceUrl, method, params, cb) {
   var parsedUrl = url.parse(serviceUrl + '/' + method)
     , options = { host: parsedUrl.host
                 , port: 443
@@ -28,24 +28,20 @@ function serviceRequest(serviceUrl, method, params, callback) {
     , data = qs.stringify(params)
 
   var req = https.request(options, function(res) {
-    console.log("statusCode: ", res.statusCode)
-    console.log("headers: ", res.headers)
-
+    if(res.statusCode != 200) { 
+      return cb(new Error( 'Status code: ' + res.statusCode 
+                         + ' Headers: ' + JSON.stringify(res.headers)
+                         ))
+    }
     var buf = []
-    res.on('data', function(data) {
-      buf.push(data)
-    })
+    res.on('data', function(data) { buf.push(data) })
     res.on('end', function() {
       var parser = new xml2js.Parser()
-      parser.addListener('end', function(result) {
-          callback(0, result)
-      })
+      parser.addListener('end', function(result) { cb(0, result) })
       parser.parseString(buf.join(''))
     })
   })
-  req.on('error', function(e) {
-    console.error(e)
-  })
+  req.on('error', function(e) { return cb(e) })
   req.write(data)
   req.end()
 }
@@ -55,7 +51,7 @@ function zeroPad(num, places) {
   return s.length >= places ? s : new Array(places - s.length + 1).join('0') + s
 }
 
-function getAuthorized(params, callback) {
+function getAuthorized(params, cb) {
   var paramDefs = 
     { amount:         { field: 'TOTAL',        size: 10, required: true,  description: 'Sales total amount', formatter: function(n) { return n.toFixed(2) }}
     , type:           { field: 'TRANSACAO',    size:  2, required: true,  description: 'Transaction type code', formatter: function(n) { return zeroPad(n, 2) }}
@@ -84,29 +80,39 @@ function getAuthorized(params, callback) {
     , additionalData: { field: 'ADD_Data',     size:  0, required: false, description: 'Only for Airline Companies, Hotels and Car Rental merchants'}
     }
 
+  // map parameter names, format and check parameter values
   var paramsToSend = {}
-  Object.keys(params).forEach(function(param) {
+  for(var param in params) {
+    if(!params.hasOwnProperty(param)) continue;
+    if(!paramDefs.hasOwnProperty(param)) return cb(new Error('Unknown parameter: ' + param))
     var def = paramDefs[param]
-    if(!def) throw('Unknown parameter: ' + param)
-    var value = params[param]
+      , value = params[param]
     value = def.formatter ? def.formatter(value) : String(value)
-    if(value.length > def.size) throw('Parameter value too long: ' + param)
+    if(value.length > def.size) {
+      return cb(new Error('Parameter value too long: ' + param))
+    }
     paramsToSend[def.field] = value
-  })
-  // defaults
-  Object.keys(paramDefs).map(function(param) {
+  }
+  // check required, set defaults
+  for(var param in paramDefs) {
+    if(!paramDefs.hasOwnProperty(param)) continue;
     var def = paramDefs[param]
     if(!paramsToSend.hasOwnProperty(def.field)) paramsToSend[def.field] = ''
-  })
-  console.log(paramsToSend)
+    if(def.required && String(paramsToSend[def.field]).trim() === '') {
+      return cb(new Error('Required parameter not present: ' + param))
+    }
+  }
   
-  /* PARCELAS must be filled out with the value “00” (zero zero) when the “TRANSACAO” parameter is “04” or 
-     “39”, that is, full payment/cash. */
+  /* PARCELAS must be filled out with the value “00” (zero zero) 
+     when the “TRANSACAO” parameter is “04” or  “39”, that is, 
+     full payment/cash. */
   if([TYPES.FULL_PAYMENT, TYPES.IATA_FULL_PAYMENT].indexOf(params.type) != -1) {
-    if(params.installments !== 0) throw('TODO');
+    if(params.installments !== 0) {
+      return cb(new Error('Number of installments must be 0 for full payments'))
+    }
   }  
   
-  serviceRequest(SERVICE_URL, 'GetAuthorized', paramsToSend, callback)
+  serviceRequest(SERVICE_URL, 'GetAuthorized', paramsToSend, cb)
 }
 
 module.exports = 
