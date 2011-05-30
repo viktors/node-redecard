@@ -145,7 +145,6 @@ function getAuthorized(params, cb) {
       return cb(new Error('Required parameter not present: ' + param))
     }
   }
-  console.log(paramsToSend)
   
   serviceRequest(env, 'GetAuthorized', paramsToSend, function(err, data) {
     if(err) return cb(err)
