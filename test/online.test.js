@@ -9,7 +9,7 @@ var redecard = require('../index.js')
   , assert = require('assert')
 
 module.exports = 
-  { 'test getAuthorized success': function() {
+  { 'test getAuthorized and confirmTxn': function() {
       var details = { amount: 0.01
                     , type: redecard.TYPES.FULL_PAYMENT
                     , installments: 0
@@ -22,13 +22,32 @@ module.exports =
                     , cardFullName: 'JOHN DOE'
                     }
       merchant.getAuthorized(
-        details
+          details
         , function(err, data) {
+          console.log('getAuthorized', err, data)
           assert.ifError(err)
           assert.strictEqual(true, data.isApproved)
           assert.strictEqual(0, data.code)
           assert.strictEqual('BRA', data.countryCode)
           assert.strictEqual(details.orderId, data.orderId)
+          
+          var details2 = 
+            { date: data.date
+            , uniqSeq: data.uniqSeq
+            , receiptId: data.receiptId
+            , authorizationId: data.authorizationId
+            , installments: details.installments
+            , originalType: details.type
+            , amount: details.amount
+            , supplierId: details.supplierId
+            , orderId: details.orderId
+          }
+          merchant.confirmTxn(
+              details2, function(err, data) {
+                console.log('confirmTxn', err, data)
+              }
+          )
+          
         }
       )
     }
@@ -52,6 +71,7 @@ module.exports =
         merchant.getAuthorized(
           details
           , function(err, data) {
+            console.log('preauth', err, data)
             assert.ifError(err)
             assert.strictEqual(true, data.isApproved)
             assert.strictEqual(0, data.code)
