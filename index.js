@@ -5,95 +5,97 @@ var https = require('https')
   , qs = require('querystring')
   , xml2js = require('xml2js')
 
-var configs = { production: { SERVICE_URL: 'https://ecommerce.redecard.com.br/pos_virtual/wskomerci/cap.asmx' }
-              , test: { SERVICE_URL: 'https://ecommerce.redecard.com.br/pos_virtual/wskomerci/cap_teste.asmx' }
-              }
-  , TYPES = { FULL_PAYMENT: 4
+var TYPES = { FULL_PAYMENT: 4
             , ISSUER_INSTALLMENTS: 6
             , MERCHANT_INSTALLMENTS: 8
             , PRE_AUTHORIZATION: 73
             , IATA_FULL_PAYMENT: 39
             , IATA_INSTALLMENTS: 40
             }
-  , ERRORS = { 20: 'Missing mandatory parameter'
-             , 21: 'Membership number in invalid format'
-             , 22: 'Number of installments inconsistent with the transaction'
-             , 23: 'Problems in merchant’s registration: invalid IP'
-             , 24: 'Problems in merchant’s registration'
-             , 25: 'Merchant not registered'
-             , 26: 'Merchant not registered'
-             , 27: 'Invalid card'
-             , 28: 'CVC2 in invalid format'
-             , 29: 'Operation not allowed: The order number exceeds 13 characters for the IATA type transaction (39 or 40)'
-             , 30: 'Missing AVS parameter'
-             , 31: 'Order number is greater than the allowed (16 positions)'
-             , 32: 'IATA code is invalid or inexistent'
-             , 33: 'Invalid IATA code'
-             , 34: 'Distributor is invalid or inexistent'
-             , 35: 'Problems in merchant’s registration: invalid IP'
-             , 36: 'Operation not allowed'
-             , 37: 'Distributor is invalid or inexistent'
-             , 38: 'Operation not allowed in test environment. Transactions with amounts that exceed R$ 4.00 may not be performed in the test environment.'
-             , 39: 'Operation not allowed for the informed IATA code'
-             , 40: 'IATA code is invalid or inexistent'
-             , 41: 'Problems in the merchant’s registration, or username/password problem'
-             , 42: 'Problems in the merchant’s user registration, or username/password problem'
-             , 43: 'Problems in user authentication, or username/password problem'
-             , 44: 'Incorrect user for tests'
-             , 45: 'Problems in merchant’s registration for tests'
-             , 56: 'Invalid Data'
-             }
 
-function serviceRequest(env, method, params, cb) {
-  var serviceUrl = configs[env].SERVICE_URL
-  if(env == 'test') method += 'Tst'
-  var parsedUrl = url.parse(serviceUrl + '/' + method)
-    , options = { host: parsedUrl.host
-                , port: 443
-                , path: parsedUrl.pathname
-                , method: 'POST'
-                , headers: { 'Content-Type': 'application/x-www-form-urlencoded'
-                           , 'Host': parsedUrl.host
-                           , 'User-Agent': 'node-redecard'
-                           }
+function Instance(env, username, password) {
+  var self = this
+  self.env = env
+  self.username = username
+  self.password = password
+  var configs = { production: { SERVICE_URL: 'https://ecommerce.redecard.com.br/pos_virtual/wskomerci/cap.asmx' }
+                , test: { SERVICE_URL: 'https://ecommerce.redecard.com.br/pos_virtual/wskomerci/cap_teste.asmx' }
                 }
-    , data = qs.stringify(params)
+    , ERRORS = { 20: 'Missing mandatory parameter'
+               , 21: 'Membership number in invalid format'
+               , 22: 'Number of installments inconsistent with the transaction'
+               , 23: 'Problems in merchant’s registration: invalid IP'
+               , 24: 'Problems in merchant’s registration'
+               , 25: 'Merchant not registered'
+               , 26: 'Merchant not registered'
+               , 27: 'Invalid card'
+               , 28: 'CVC2 in invalid format'
+               , 29: 'Operation not allowed: The order number exceeds 13 characters for the IATA type transaction (39 or 40)'
+               , 30: 'Missing AVS parameter'
+               , 31: 'Order number is greater than the allowed (16 positions)'
+               , 32: 'IATA code is invalid or inexistent'
+               , 33: 'Invalid IATA code'
+               , 34: 'Distributor is invalid or inexistent'
+               , 35: 'Problems in merchant’s registration: invalid IP'
+               , 36: 'Operation not allowed'
+               , 37: 'Distributor is invalid or inexistent'
+               , 38: 'Operation not allowed in test environment. Transactions with amounts that exceed R$ 4.00 may not be performed in the test environment.'
+               , 39: 'Operation not allowed for the informed IATA code'
+               , 40: 'IATA code is invalid or inexistent'
+               , 41: 'Problems in the merchant’s registration, or username/password problem'
+               , 42: 'Problems in the merchant’s user registration, or username/password problem'
+               , 43: 'Problems in user authentication, or username/password problem'
+               , 44: 'Incorrect user for tests'
+               , 45: 'Problems in merchant’s registration for tests'
+               , 56: 'Invalid Data'
+               }
+               
+  function serviceRequest(method, params, cb) {
+    var serviceUrl = configs[self.env].SERVICE_URL
+    if(self.env == 'test') method += 'Tst'
+    var parsedUrl = url.parse(serviceUrl + '/' + method)
+      , options = { host: parsedUrl.host
+                  , port: 443
+                  , path: parsedUrl.pathname
+                  , method: 'POST'
+                  , headers: { 'Content-Type': 'application/x-www-form-urlencoded'
+                             , 'Host': parsedUrl.host
+                             , 'User-Agent': 'node-redecard'
+                             }
+                  }
+      , data = qs.stringify(params)
 
-  var req = https.request(options, function(res) {
-    var buf = []
-    res.on('data', function(data) { buf.push(data) })
-    res.on('end', function() {
-      if(res.statusCode != 200) { 
-        return cb(new Error( 'Status code: ' + res.statusCode 
-                           + ' Headers: ' + JSON.stringify(res.headers)
-                           + ' Body: ' + buf.join('')
-                           ))
-      }
-      var parser = new xml2js.Parser()
-      parser.addListener('end', function(result) { cb(0, result) })
-      parser.parseString(buf.join(''))
+    var req = https.request(options, function(res) {
+      var buf = []
+      res.on('data', function(data) { buf.push(data) })
+      res.on('end', function() {
+        if(res.statusCode != 200) { 
+          return cb(new Error( 'Status code: ' + res.statusCode 
+                             + ' Headers: ' + JSON.stringify(res.headers)
+                             + ' Body: ' + buf.join('')
+                             ))
+        }
+        var parser = new xml2js.Parser()
+        parser.addListener('end', function(result) { cb(0, result) })
+        parser.parseString(buf.join(''))
+      })
     })
-  })
-  req.on('error', function(e) { return cb(e) })
-  req.write(data)
-  req.end()
-}
+    req.on('error', function(e) { return cb(e) })
+    req.write(data)
+    req.end()
+  }
 
-function zeroPad(num, places) {
-  var s = String(parseInt(num, 10))
-  return s.length >= places ? s : new Array(places - s.length + 1).join('0') + s
-}
+  function zeroPad(num, places) {
+    var s = String(parseInt(num, 10))
+    return s.length >= places ? s : new Array(places - s.length + 1).join('0') + s
+  }
 
-function parseDate(yyyymmdd) {
-  return new Date( parseInt(yyyymmdd.substring(0, 4), 10)
-                 , parseInt(yyyymmdd.substring(4, 6), 10) - 1
-                 , parseInt(yyyymmdd.substring(6, 8), 10)
-                 )
-}
-
-function getAuthorized(params, cb) {
-  var env = params.env
-  delete params.env
+  function parseDate(yyyymmdd) {
+    return new Date( parseInt(yyyymmdd.substring(0, 4), 10)
+                   , parseInt(yyyymmdd.substring(4, 6), 10) - 1
+                   , parseInt(yyyymmdd.substring(6, 8), 10)
+                   )
+  }
 
   var paramDefs = 
     { amount:         { field: 'TOTAL',        size: 10, required: true,  description: 'Sales total amount', formatter: function(n) { return n.toFixed(2) }}
@@ -122,47 +124,34 @@ function getAuthorized(params, cb) {
     , autoConfirm:    { field: 'CONFTXN',      size:  1, required: false, description: 'Confirmation Flag', formatter: function(b) { return b ? 'S' : '' }}
     , additionalData: { field: 'ADD_Data',     size:  0, required: false, description: 'Only for Airline Companies, Hotels and Car Rental merchants'}
     }
-  if(env == 'test') paramDefs.additionalData.field = 'ADDData' // bug in redecard
-
-  // map parameter names, format and check parameter values
-  var paramsToSend = {}
-  for(var param in params) {
-    if(!params.hasOwnProperty(param)) continue;
-    if(!paramDefs.hasOwnProperty(param)) return cb(new Error('Unknown parameter: ' + param))
-    var def = paramDefs[param]
-      , value = params[param]
-    value = def.formatter ? def.formatter(value) : String(value)
-    if(value.length > def.size) {
-      return cb(new Error('Parameter value too long: ' + param))
-    }
-    paramsToSend[def.field] = value
-  }
-  // check required, set defaults
-  for(var param in paramDefs) {
-    if(!paramDefs.hasOwnProperty(param)) continue;
-    var def = paramDefs[param]
-    if(!paramsToSend.hasOwnProperty(def.field)) paramsToSend[def.field] = ''
-    if(def.required && String(paramsToSend[def.field]).trim() === '') {
-      return cb(new Error('Required parameter not present: ' + param))
-    }
-  }
+  if(self.env == 'test') paramDefs.additionalData.field = 'ADDData' // bug in redecard
   
-  serviceRequest(env, 'GetAuthorized', paramsToSend, function(err, data) {
-    if(err) return cb(err)
-    var fieldMap = { CODRET: {field: 'code', convert: function(s) { return parseInt(s, 10) }}
-                   , MSGRET: {field: 'message', convert: function(s) { return unescape(String(s).replace(/\+/g, '%20')) }}
-                   , DATA: {field: 'date', convert: parseDate}
-                   , NUMPEDIDO: {field: 'orderId'}
-                   , NUMAUTOR: {field: 'authorizationId'}
-                   , NUMCV: {field: 'receiptId'}
-                   , NUMAUTENT: {field: 'authenticationId'}
-                   , NUMSQN: {field: 'uniqSeq'}
-                   , ORIGEM_BIN: {field: 'countryCode'}
-                   , DISTRIBUIDOR: {field: 'distributorId'}
-                   , IATA: {field: 'iata'}
-                   , CONFCODRET: {field: 'autoConfirmCode', convert: function(s) { return parseInt(s, 10) }}
-                   , CONFMSGRET: {field: 'autoConfirmMessage', convert: function(s) { return unescape(String(s).replace(/\+/g, '%20')) }}
-                   }
+  function prepareParams(params, validParams, cb) {
+    var paramsToSend = {}
+    for(var param in params) {
+      if(!params.hasOwnProperty(param)) continue;
+      if(validParams.indexOf(param) == -1) return cb(new Error('Unknown parameter: ' + param))
+      var def = paramDefs[param]
+        , value = params[param]
+      value = def.formatter ? def.formatter(value) : String(value)
+      if(value.length > def.size) {
+        return cb(new Error('Parameter value too long: ' + param))
+      }
+      paramsToSend[def.field] = value
+    }
+    // check required, set defaults
+    for(var param in paramDefs) {
+      if(!paramDefs.hasOwnProperty(param)) continue;
+      var def = paramDefs[param]
+      if(!paramsToSend.hasOwnProperty(def.field)) paramsToSend[def.field] = ''
+      if(def.required && String(paramsToSend[def.field]).trim() === '') {
+        return cb(new Error('Required parameter not present: ' + param))
+      }
+    }
+    return cb(null, paramsToSend)
+  }
+
+  function mapResponse(data, fieldMap) {
     var rv = {}
     for(var p in data) {
       if(data.hasOwnProperty(p) && data[p] !== '' && typeof data[p] != 'object') {
@@ -170,15 +159,43 @@ function getAuthorized(params, cb) {
         rv[def.field] = def.convert ? def.convert(data[p]) : data[p]
       }
     }
-    
-    rv.isApproved = rv.code === 0 && rv.hasOwnProperty('receiptId')
-    if(rv.code && ERRORS[rv.code]) rv.errorDetails = ERRORS[rv.code]
-    
-    return cb(null, rv)
-  })
+    return rv    
+  }
+  
+  self.getAuthorized = function(params, cb) {
+    var validParams = 'amount type installments supplierId orderId cardNumber cardCode cardExpMonth cardExpYear cardFullName '
+                    + 'iata distributorId concentradorId boardingTax boardingDate docNum1 docNum2 docNum3 docNum4 pax1 pax2 pax3 pax4 autoConfirm additionalData'.split(' ')
+    prepareParams(params, validParams, function(err, paramsToSend) {
+      if(err) return cb(err)
+      serviceRequest('GetAuthorized', paramsToSend, function(err, data) {
+        if(err) return cb(err)
+        var fieldMap = { CODRET: {field: 'code', convert: function(s) { return parseInt(s, 10) }}
+                       , MSGRET: {field: 'message', convert: function(s) { return unescape(String(s).replace(/\+/g, '%20')) }}
+                       , DATA: {field: 'date', convert: parseDate}
+                       , NUMPEDIDO: {field: 'orderId'}
+                       , NUMAUTOR: {field: 'authorizationId'}
+                       , NUMCV: {field: 'receiptId'}
+                       , NUMAUTENT: {field: 'authenticationId'}
+                       , NUMSQN: {field: 'uniqSeq'}
+                       , ORIGEM_BIN: {field: 'countryCode'}
+                       , DISTRIBUIDOR: {field: 'distributorId'}
+                       , IATA: {field: 'iata'}
+                       , CONFCODRET: {field: 'autoConfirmCode', convert: function(s) { return parseInt(s, 10) }}
+                       , CONFMSGRET: {field: 'autoConfirmMessage', convert: function(s) { return unescape(String(s).replace(/\+/g, '%20')) }}
+                       }
+
+        rv = mapResponse(data, fieldMap)
+        rv.isApproved = rv.code === 0 && rv.hasOwnProperty('receiptId')
+        if(rv.code && ERRORS[rv.code]) rv.errorDetails = ERRORS[rv.code]
+
+        return cb(null, rv)
+      })
+    })
+  }
+
 }
 
 module.exports = 
-  { TYPES: TYPES
-  , getAuthorized: getAuthorized
+  { Instance: Instance
+  , TYPES: TYPES 
   }
