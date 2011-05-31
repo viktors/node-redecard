@@ -149,8 +149,8 @@ function getAuthorized(params, cb) {
   
   serviceRequest(env, 'GetAuthorized', paramsToSend, function(err, data) {
     if(err) return cb(err)
-    var fieldMap = { CODRET: {field: 'errorCode', convert: function(s) { return parseInt(s, 10) }}
-                   , MSGRET: {field: 'errorMessage', convert: function(s) { return unescape(String(s).replace(/\+/g, '%20')) }}
+    var fieldMap = { CODRET: {field: 'code', convert: function(s) { return parseInt(s, 10) }}
+                   , MSGRET: {field: 'message', convert: function(s) { return unescape(String(s).replace(/\+/g, '%20')) }}
                    , DATA: {field: 'date', convert: parseDate}
                    , NUMPEDIDO: {field: 'orderId'}
                    , NUMAUTOR: {field: 'authorizationId'}
@@ -171,8 +171,8 @@ function getAuthorized(params, cb) {
       }
     }
     
-    rv.isApproved = rv.errorCode === 0 && rv.hasOwnProperty('receiptId')
-    if(rv.errorCode && ERRORS[rv.errorCode]) rv.errorDetails = ERRORS[rv.errorCode]
+    rv.isApproved = rv.code === 0 && rv.hasOwnProperty('receiptId')
+    if(rv.code && ERRORS[rv.code]) rv.errorDetails = ERRORS[rv.code]
     
     return cb(null, rv)
   })
