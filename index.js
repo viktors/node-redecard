@@ -128,7 +128,19 @@ function Instance(env, username, password) {
     , receiptId:      { field: 'NUMCV',        size:  9, description: 'Sales receipt number'}
     , authorizationId:{ field: 'NUMAUTOR',     size:  6, description: 'Authorization number'}
     , originalType:   { field: 'TRANSORIG',    size:  2, description: 'Transaction type code', formatter: function(n) { return zeroPad(n, 2) }}
+    , username:       { field: 'USR',          size: 16, description: 'Transaction type code', formatter: function(n) { return zeroPad(n, 2) }}
+    , password:       { field: 'PWD',          size: 20, description: 'Transaction type code', formatter: function(n) { return zeroPad(n, 2) }}
+    , startDate:      { field: 'DATA_INICIAL', size:  8, description: 'Transaction date', formatter: function(d) { return String(d.getFullYear()) + zeroPad(d.getMonth() + 1, 2) + zeroPad(d.getDate(), 2)}}
+    , endDate:        { field: 'DATA_FINAL',   size:  8, description: 'Transaction date', formatter: function(d) { return String(d.getFullYear()) + zeroPad(d.getMonth() + 1, 2) + zeroPad(d.getDate(), 2)}}
+    , trxType:        { field: 'TIPO_TRX',     size:  2, description: 'Transaction type code', formatter: function(n) { return zeroPad(n, 2) }}
+    , status:         { field: 'STATUS_TRX',   size:  2, description: 'Transaction status code', formatter: function(n) { return zeroPad(n, 2) }}
+    , avs:            { field: 'SERVICO_AVS',  size:  1, description: 'AVS restriction code'}
     }
+    
+    var requiredParams = 'supplierId username password startDate endDate'.split(' ')
+      , optionalParams = 'distributorId type status avs'
+      
+      
   if(self.env == 'test') paramDefs.additionalData.field = 'ADDData' // bug in redecard
   
   function prepareParams(params, requiredParams, optionalParams, cb) {
@@ -221,6 +233,20 @@ function Instance(env, username, password) {
         rv = mapResponse(data, fieldMap)
 
         return cb(null, rv)
+      })
+    })
+  }
+
+  self.salesReport = function(params, cb) {
+    params.username = self.username
+    params.password = self.password
+    var requiredParams = 'supplierId username password startDate endDate'.split(' ')
+      , optionalParams = 'distributorId trxType status avs'.split(' ')
+    prepareParams(params, requiredParams, optionalParams, function(err, paramsToSend) {
+      if(err) return cb(err)
+      serviceRequest('CouncilReport', paramsToSend, function(err, data) {
+        if(err) return cb(err)
+        return cb(null, data)
       })
     })
   }

@@ -77,6 +77,18 @@ module.exports =
             assert.strictEqual(0, data.code)
             assert.strictEqual('BRA', data.countryCode)
             assert.strictEqual(details.orderId, data.orderId)
+            var today = new Date()
+            var details2 = 
+              { supplierId: details.supplierId
+              , startDate: today
+              , endDate: today
+            }
+            merchant.salesReport(
+                details2, function(err, data) {
+                  console.log('salesReport', err, data)
+                }
+            )
+            
           }
         )
       }
