@@ -92,12 +92,9 @@ function Instance(env, username, password) {
     var s = String(parseInt(num, 10))
     return s.length >= places ? s : new Array(places - s.length + 1).join('0') + s
   }
-
-  function parseDate(yyyymmdd) {
-    return new Date( parseInt(yyyymmdd.substring(0, 4), 10)
-                   , parseInt(yyyymmdd.substring(4, 6), 10) - 1
-                   , parseInt(yyyymmdd.substring(6, 8), 10)
-                   )
+  
+  function formatDate(d) {
+    return String(d.getFullYear()) + zeroPad(d.getMonth() + 1, 2) + zeroPad(d.getDate(), 2)
   }
 
   function parseInputDefs(method, cb) {
@@ -105,12 +102,12 @@ function Instance(env, username, password) {
       { money:    function(n) { return String(n.toFixed(2)) }
       , zpad2:    function(n) { return zeroPad(n, 2) }
       , zpad9:    function(n) { return zeroPad(n, 9) }
-      , string:   function(s) { return String(s) }
+      , string:   String
       , digits:   function(s) { return String(s).replace(/[^0-9]+/g, '') }
       , month:    function(n) { return zeroPad(n, 2) }
       , year:     function(n) { return zeroPad(n - 2000, 2) }
       , boolean:  function(b) { return b ? 'S' : '' }
-      , date:     function(d) { return String(d.getFullYear()) + zeroPad(d.getMonth() + 1, 2) + zeroPad(d.getDate(), 2)}
+      , date:     formatDate
     }
     fs.readFile(__dirname + '/defs/' + method + '.input.conf', function (err, str) {
       if (err) return cb(err)
@@ -130,9 +127,16 @@ function Instance(env, username, password) {
     })    
   }
   
+  function parseDate(yyyymmdd) {
+    return new Date( parseInt(yyyymmdd.substring(0, 4), 10)
+                   , parseInt(yyyymmdd.substring(4, 6), 10) - 1
+                   , parseInt(yyyymmdd.substring(6, 8), 10)
+                   )
+  }
+  
   function parseOutputDefs(method, cb) {
     var outputConverters = 
-      { string:   function(s) { return String(s) }
+      { string:   String
       , date:     parseDate
       , urlencoded: function(s) { return unescape(String(s).replace(/\+/g, '%20')) }
       , integer:  function(s) { return parseInt(s, 10) }
