@@ -15,6 +15,10 @@ var TYPES = { FULL_PAYMENT: 4
             , IATA_FULL_PAYMENT: 39
             , IATA_INSTALLMENTS: 40
             }
+var CONFIRMATION_CODES = { OK: 0
+                         , ALREADY_CONFIRMED: 1
+                         , TRX_UNDONE: 3
+                         }
 
 function Instance(env, username, password) {
   var self = this
@@ -188,15 +192,16 @@ function Instance(env, username, password) {
     return cb(null, paramsToSend)
   }
 
-  function mapResponse(data, fieldMap) {
+  function mapResponse(data, fieldMap, cb) {
     var rv = {}
     for(var p in data) {
       if(data.hasOwnProperty(p) && data[p] !== '' && typeof data[p] != 'object') {
         var def = fieldMap[p]
+        if(!def) return cb(new Error('No mapping for ' + p))
         rv[def.field] = def.converter ? def.converter(data[p]) : data[p]
       }
     }
-    return rv    
+    return cb(null, rv)
   }
   
   function callMethod(method, params, cb) {
@@ -208,8 +213,17 @@ function Instance(env, username, password) {
           if(err) return cb(err)
           parseOutputDefs(method, function(err, fieldMap) {
             if(err) return cb(err)
-            rv = mapResponse(data, fieldMap)
-            return cb(null, rv)
+            mapResponse(data, fieldMap, function(err, res) {
+              /* Retry the transaction if the following codes are returned:
+                 74: Institution has no communication
+                 56, 76, 86: Redo the transaction */
+              if([74, 56, 76, 86].indexOf(res.code) != -1) {
+                console.log('Got code ' + res.code + ' for ' + method + ', retrying...')
+                return callMethod(method, params, cb)
+              } else {
+                return cb(err, res)
+              }
+            })
           })
         })
       })      
@@ -237,4 +251,5 @@ function Instance(env, username, password) {
 module.exports = 
   { Instance: Instance
   , TYPES: TYPES 
+  , CONFIRMATION_CODES: CONFIRMATION_CODES
   }
