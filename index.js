@@ -109,21 +109,23 @@ function Instance(env, username, password) {
       , boolean:  function(b) { return b ? 'S' : '' }
       , date:     formatDate
     }
-    fs.readFile(__dirname + '/defs/' + method + '.input.conf', function (err, str) {
+    fs.readFile(__dirname + '/defs/' + method + '.input.conf', 'utf8', function (err, str) {
       if (err) return cb(err)
       var defs = {}
-      String(str).split("\n").forEach(function(line) {
-        if(line.match(/^\#/)) return
+        , lines = str.split("\n")
+      for(var i = 0, l = lines.length; i < l; i++) {
+        var line = lines[i]
+        if(line.match(/^\#/) || !line.trim().length) continue
         var f = line.trim().split(/\s+/, 5)
-        if(f.length < 5) return // XXX silently ignores errors
+        if(f.length < 5) return cb(new Error('Invalid input field definition: ' + line))
         defs[f[0]] = { field: f[1]
                      , required: !!f[2]
                      , size: f[3]
                      , formatter: inputFormatters[f[4]]
                      , description: f[5]
                      }
-      })
-      cb(null, defs)
+      }
+      return cb(null, defs)
     })    
   }
   
@@ -141,15 +143,17 @@ function Instance(env, username, password) {
       , urlencoded: function(s) { return unescape(String(s).replace(/\+/g, '%20')) }
       , integer:  function(s) { return parseInt(s, 10) }
       }
-    fs.readFile(__dirname + '/defs/' + method + '.output.conf', function (err, str) {
+    fs.readFile(__dirname + '/defs/' + method + '.output.conf', 'utf8', function (err, str) {
       if (err) return cb(err)
       var defs = {}
-      String(str).split("\n").forEach(function(line) {
-        if(line.match(/^\#/)) return
+        , lines = str.split("\n")
+      for(var i = 0, l = lines.length; i < l; i++) {
+        var line = lines[i]
+        if(line.match(/^\#/) || !line.trim().length) continue
         var f = line.trim().split(/\s+/, 3)
-        if(f.length < 3) return // XXX silently ignores errors
+        if(f.length < 3) return cb(new Error('Invalid output field definition: ' + line))
         defs[f[0]] = { field: f[1], converter: outputConverters[f[2]] }
-      })
+      }
       cb(null, defs)
     })    
     
@@ -197,11 +201,13 @@ function Instance(env, username, password) {
   
   function callMethod(method, params, cb) {
     parseInputDefs(method, function(err, defs) {
+      if(err) return cb(err)
       prepareParams(params, defs, function(err, paramsToSend) {
         if(err) return cb(err)
         serviceRequest(method, paramsToSend, function(err, data) {
           if(err) return cb(err)
           parseOutputDefs(method, function(err, fieldMap) {
+            if(err) return cb(err)
             rv = mapResponse(data, fieldMap)
             return cb(null, rv)
           })
