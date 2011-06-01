@@ -37,7 +37,7 @@ module.exports =
             , receiptId: data.receiptId
             , authorizationId: data.authorizationId
             , installments: details.installments
-            , originalType: details.type
+            , type: details.type
             , amount: details.amount
             , supplierId: details.supplierId
             , orderId: details.orderId
@@ -77,18 +77,6 @@ module.exports =
             assert.strictEqual(0, data.code)
             assert.strictEqual('BRA', data.countryCode)
             assert.strictEqual(details.orderId, data.orderId)
-            var today = new Date()
-            var details2 = 
-              { supplierId: details.supplierId
-              , startDate: today
-              , endDate: today
-            }
-            merchant.salesReport(
-                details2, function(err, data) {
-                  console.log('salesReport', err, data)
-                }
-            )
-            
           }
         )
       }
