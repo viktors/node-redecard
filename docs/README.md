@@ -29,7 +29,7 @@ Key features
 Usage
 -----
 ```js
-var redecard = require('../index.js')
+var redecard = require('redecard')
   , merchant = new redecard.Instance('test', 'john.doe', 'secret')
   , details = { amount: 0.01
                 , type: redecard.TYPES.FULL_PAYMENT
