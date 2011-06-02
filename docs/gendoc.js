@@ -46,6 +46,7 @@ fs.readdir(__dirname + '/../defs/', function(err, files) {
     if(method) {
       genDoc(method, nextMethod)
     } else {
+      fs.writeFileSync(__dirname + '/api.html', out.join(''))
       var s = fs.readFileSync(__dirname + '/README.md')
       fs.writeFileSync(__dirname + '/../README.md', s + out.join(''))
     }
