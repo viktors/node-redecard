@@ -1,0 +1,22 @@
+h2=method
+
+h3 Arguments
+
+p #{method} takes two parameters: a hash of arguments and a callback.
+
+table
+  tr
+    th Field
+    th Type
+    th Required?
+    th Max. length
+    th Original Redecard Field
+    th Description
+  -each def in defs
+    tr
+      td=def.key
+      td=def.type
+      td=def.required ? 'Yes' : 'No'
+      td=def.size
+      td=def.field
+      td=def.description

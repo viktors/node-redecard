@@ -1,0 +1,16 @@
+h3 Return value
+
+p #{method} returns a hash.
+
+table
+  tr
+    th Field
+    th Type
+    th Original Redecard Field
+    th Description
+  -each def in defs
+    tr
+      td=def.field
+      td=def.type
+      td=def.key
+      td=def.description

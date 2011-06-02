@@ -1,5 +1,6 @@
 {
   "name": "redecard",
+  "description": "Redecard (former VisaNet) for Node.js",
   "version": "0.0.1",
   "repository": {
     "type": "git",
@@ -8,7 +9,8 @@
   "author": "Viktors Rotanovs <viktors.rotanovs@gmail.com> (http://rotanovs.com)",
   "dependencies": {
     "expresso": ">=0.7.7",
-    "xml2js": ">=0.1.6"
+    "xml2js": ">=0.1.6",
+    "jade": ">= 0.11.1"
   },
   "main": "index",
   "engines": {
