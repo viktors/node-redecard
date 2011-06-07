@@ -76,15 +76,19 @@ function Instance(env, username, password) {
       var buf = []
       res.on('data', function(data) { buf.push(data) })
       res.on('end', function() {
+        buf = buf.join('')
         if(res.statusCode != 200) { 
           return cb(new Error( 'Status code: ' + res.statusCode 
                              + ' Headers: ' + JSON.stringify(res.headers)
-                             + ' Body: ' + buf.join('')
+                             + ' Body: ' + buf
                              ))
         }
         var parser = new xml2js.Parser()
-        parser.addListener('end', function(result) { cb(0, result) })
-        parser.parseString(buf.join(''))
+        parser.addListener('end', function(result) { 
+          result._xml = buf
+          cb(0, result) 
+        })
+        parser.parseString(buf)
       })
     })
     req.on('error', function(e) { return cb(e) })
@@ -143,6 +147,7 @@ function Instance(env, username, password) {
           parsers.parseOutputDefs(method, function(err, fieldMap) {
             if(err) return cb(err)
             mapResponse(data, fieldMap, function(err, res) {
+              if(err) return cb(err)
               /* Retry the transaction if the following codes are returned:
                  74: Institution has no communication
                  56, 76, 86: Redo the transaction */
