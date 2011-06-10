@@ -130,7 +130,7 @@ function Instance(env, username, password) {
     for(var p in data) {
       if(data.hasOwnProperty(p) && data[p] !== '' && typeof data[p] != 'object') {
         var def = fieldMap[p]
-        if(!def) return cb(new Error('No mapping for ' + p))
+        if(!def) return cb(new Error('No mapping for ' + p + ' when mapping ' + JSON.stringify(data)))
         rv[def.field] = def.converter ? def.converter(data[p]) : data[p]
       }
     }
