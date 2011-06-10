@@ -45,7 +45,31 @@ var redecard = require('redecard')
 merchant.getAuthorized(details, function(err, data) {
   if(err) throw(err)
   if(data.isApproved) {
-    // transaction approved
+    // transaction approved, confirm it
+    
+    var confirmationDetails = 
+      { date: data.date
+      , uniqSeq: data.uniqSeq
+      , receiptId: data.receiptId
+      , authorizationId: data.authorizationId
+      , installments: details.installments
+      , type: details.type
+      , amount: details.amount
+      , supplierId: details.supplierId
+      , orderId: details.orderId
+      }
+    merchant.confirmTxn(
+        confirmationDetails, function(err, data) {
+          if(err) throw(err)
+          // data.code should be one of:
+          //    redecard.CONFIRMATION_CODES.OK
+          //    redecard.CONFIRMATION_CODES.ALREADY_CONFIRMED
+          //    redecard.CONFIRMATION_CODES.TRX_UNDONE
+          //  TRX_UNDONE means that more than 2 minutes have passed 
+          //  before confirmation was sent.
+        }
+    )
+    
   } else {
     // transaction NOT approved
   }
