@@ -60,6 +60,7 @@ function Instance(env, username, password) {
   function serviceRequest(method, params, cb) {
     var serviceUrl = configs[self.env].SERVICE_URL
     if(self.env == 'test') method += 'Tst'
+    var postdata = qs.stringify(params)
     var parsedUrl = url.parse(serviceUrl + '/' + method)
       , options = { host: parsedUrl.host
                   , port: 443
@@ -68,9 +69,10 @@ function Instance(env, username, password) {
                   , headers: { 'Content-Type': 'application/x-www-form-urlencoded'
                              , 'Host': parsedUrl.host
                              , 'User-Agent': 'node-redecard'
+                             , 'Content-Length': postdata.length
                              }
                   }
-      , data = qs.stringify(params)
+      , data = postdata
 
     var req = https.request(options, function(res) {
       var buf = []
